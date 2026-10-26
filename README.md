@@ -21,7 +21,7 @@
 | PC (윈도우 또는 맥) | 네이버 IMAP 설정은 PC에서만 할 수 있습니다 |
 | 파이썬 3.9 이상 | [python.org](https://www.python.org/downloads/) 에서 설치 |
 | 네이버 계정 + 스마트폰 | 2단계 인증에 네이버 앱이 깔린 휴대폰이 필요합니다 |
-| AI API 키 (선택) | OpenAI 또는 Anthropic. 처음에는 키 없이 `mock`으로 시험할 수 있습니다 |
+| AI (선택) | **돈 안 드는 4가지 방법**(keyword · Ollama · Gemini 무료 키 · Codex) 또는 유료 API(OpenAI · Anthropic). 아래 비교표 참고 |
 
 ## 2. 네이버 IMAP · 애플리케이션 비밀번호 설정
 
@@ -61,9 +61,9 @@ cp .env.example .env      # 맥
 ```ini
 NAVER_ID=myshop@naver.com
 NAVER_APP_PASSWORD=애플리케이션_비밀번호
-AI_PROVIDER=mock          # 처음엔 mock → 잘 되면 openai 또는 anthropic
-AI_API_KEY=AI_API_키
-# AI_MODEL=               # 비워 두면 기본값 (openai: gpt-6-luna / anthropic: claude-haiku-5-5)
+AI_PROVIDER=keyword       # keyword / ollama / gemini / codex / openai / anthropic / mock
+AI_API_KEY=               # gemini·openai·anthropic 만 필요
+# AI_MODEL=               # 비워 두면 기본값
 ```
 
 > 모델 이름은 바뀔 수 있습니다. 각 회사 문서에서 현재 모델 이름을 확인하세요 (2026년 10월 기준).
@@ -91,6 +91,48 @@ C:\메일비서> py naver_mail_ai.py --drafts
 
 CSV 열: `받은시각, 보낸사람, 주소, 제목, 분류, 요약, 답장초안`
 
+## 돈 안 드는 4가지 방법 (유료 API 없이)
+
+| 방법 (`AI_PROVIDER`) | 비용 | 메일이 밖으로 나가는지 | 품질 | 준비 난이도 |
+| --- | --- | --- | --- | --- |
+| `keyword` | 0원 | **안 나감** | 낮음 · 낱말 규칙 분류, 요약은 본문 앞 2줄, 답장은 정해진 틀 | ★☆☆ 가장 쉬움 (설정 없음) |
+| `ollama` | 0원 (내 PC 전기료) | **안 나감** (내 PC 안에서 처리) | 모델 크기에 따라 다름 · 7b 권장, 작은 모델은 분류 실수가 있음 | ★★☆ 설치 + 모델 내려받기(7b 약 4.7GB) |
+| `gemini` | 무료 등급 0원 (하루 사용 한도 있음) | 나감 (구글) · **무료 등급 입력은 구글 제품 개선에 쓰일 수 있음** | 높은 편 | ★☆☆ 키 발급만 |
+| `codex` | ChatGPT 구독에 포함된 사용량 (API 요금 아님) | 나감 (OpenAI) | 높은 편 | ★★☆ Node.js + Codex CLI 설치·로그인 |
+| `openai` / `anthropic` | 유료 (사용한 만큼) | 나감 | 높음 | ★☆☆ 결제수단 등록 + 키 |
+
+**추천**: 손님 정보가 걱정되시면 **Ollama**(메일이 PC 밖으로 안 나감), 가장 간단하게 시작하려면 **keyword**.
+
+### keyword — AI 없이 낱말 규칙
+
+`.env`에 `AI_PROVIDER=keyword`만 쓰면 됩니다. 제목·본문에 `(광고)·특가 → 광고`, `견적·세금계산서 → 견적·세금계산서`, `예약·클래스·방문 → 예약`, `주문·배송·환불 → 주문`, `문의·궁금·? → 문의` 순서로 검사하고 없으면 `기타`.
+코드 위쪽 `RULES`(낱말)와 `TEMPLATES`(답장 틀)를 가게에 맞게 고쳐 쓰세요.
+
+### ollama — 내 PC 안의 AI (윈도우)
+
+1. [ollama.com](https://ollama.com) → **Download** → Windows용 설치 파일을 받아 설치합니다.
+2. PowerShell에서 모델을 내려받습니다: `ollama pull qwen2.5:7b` (약 4.7GB). PC가 느리면 `qwen2.5:3b` 또는 `qwen2.5:1.5b`.
+3. 확인: `ollama list` 에 모델이 보이고, 브라우저에서 `http://localhost:11434` 를 열면 `Ollama is running` 이 나옵니다.
+4. `.env`: `AI_PROVIDER=ollama` (작은 모델이면 `AI_MODEL=qwen2.5:1.5b`)
+
+### gemini — 구글 AI Studio 무료 키
+
+1. [aistudio.google.com/apikey](https://aistudio.google.com/apikey) 에서 구글 계정으로 로그인 → **Create API key**
+2. `.env`: `AI_PROVIDER=gemini`, `AI_API_KEY=발급받은_키` (기본 모델 `gemini-3.5-flash-lite`, 2026-10 기준 무료 등급 제공 모델)
+3. ⚠️ Gemini API 추가 약관(무료 서비스): *"When you use Unpaid Services … Google uses the content you submit to the Services and any generated responses to provide, improve, and develop Google products and services"*, *"human reviewers may read, annotate, and process your API input and output"*, *"Do not submit sensitive, confidential, or personal information to the Unpaid Services."* → 손님 개인정보가 담긴 메일에는 신중히 쓰세요.
+
+### codex — ChatGPT 구독으로 (Codex CLI)
+
+1. [nodejs.org](https://nodejs.org) 에서 LTS 버전 설치
+2. PowerShell: `npm i -g @openai/codex`
+3. `codex login` → 브라우저에서 ChatGPT 계정으로 로그인 → `codex login status` 로 확인
+4. `.env`: `AI_PROVIDER=codex` (`AI_API_KEY`는 비워 두세요)
+
+- 코드는 `codex exec --sandbox read-only --skip-git-repo-check --ephemeral -` 로 실행합니다. **읽기 전용**이라 Codex가 파일을 고치지 못하고, 부탁 글은 표준입력으로 전달합니다.
+- OpenAI 문서: *"When you sign in with an API key, Codex uses standard API pricing instead of included ChatGPT plan credits."* → ChatGPT로 로그인하면 구독에 포함된 사용량을 씁니다(한도가 있음). API 키로 로그인하면 API 요금이 나가니 `codex login status`로 꼭 확인하세요.
+- Codex는 ChatGPT Plus·Pro·Business·Edu·Enterprise 요금제에 포함되어 있습니다(2026-10 기준, 한시적으로 Free·Go 체험 제공).
+- PowerShell에서 `codex` 실행이 '스크립트를 실행할 수 없습니다'로 막히면 `codex.cmd`로 실행하거나 `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` 를 고려하세요.
+
 ## 5. 예약 실행 (매일 아침 자동)
 
 **윈도우 – 작업 스케줄러**
@@ -112,13 +154,16 @@ crontab -e
 
 ## 6. 시험해 보기 (네이버·AI 없이)
 
-가짜 메일함과 가짜 AI 응답으로 전체 흐름(접속 → 한글 해독 → AI 응답 처리 → CSV · 초안 저장)을 확인합니다.
+가짜 메일함으로 전체 흐름(접속 → 한글 해독 → AI 응답 처리 → CSV · 초안 저장)을 확인합니다.
 인터넷도 비밀번호도 필요 없습니다.
 
 ```bash
-python3 tests/test_fake.py openai
-python3 tests/test_fake.py anthropic
+python3 tests/test_fake.py                # keyword·openai·anthropic·gemini·ollama·codex 모두
+python3 tests/test_fake.py keyword        # 한 가지만
+python3 tests/test_fake.py ollama-live    # 켜 둔 Ollama로 진짜 AI 분류 (LIVE_MODEL=qwen2.5:1.5b 등)
 ```
+
+keyword 는 실제로 실행되고, openai·anthropic·gemini·ollama·codex 는 각 회사 형식의 가짜 응답으로 대신합니다.
 
 ## 7. 안전 수칙
 
@@ -139,6 +184,8 @@ python3 tests/test_fake.py anthropic
 | `HTTP Error 429: Too Many Requests` | API 크레딧 부족(추정). 메일 1통에 1번 요청이라 과다 호출은 아님 | platform.openai.com 결제 설정에서 결제수단 등록·크레딧 충전 후 몇 분 뒤 재실행. API는 ChatGPT 구독과 별도 과금 |
 | `KeyError: 'NAVER_ID'` | `.env`를 못 찾음 (메모장 저장 시 `.env.txt`가 됨) | 다른 이름으로 저장 → 파일 형식 **모든 파일** → 이름 `.env`. 파일 탐색기에서 숨긴 항목·파일 확장명 보기를 켜고 확인 |
 | `애플리케이션 이름은 문자,숫자,공백만 가능합니다` | 앱 비밀번호 이름에 하이픈(-) 등 기호 | `mailai`처럼 문자·숫자만 사용 |
+| `codex 오류(codex login 확인): … 401 Unauthorized` | Codex CLI에 로그인하지 않음 | `codex login` 후 `codex login status` 확인 |
+| `AI 오류: <urlopen error … 10061 …>` 또는 `Connection refused` | Ollama가 꺼져 있음 | Ollama 앱 실행, `http://localhost:11434` 확인 |
 | `python` 명령을 찾을 수 없음 (또는 Microsoft Store가 열림) | 설치 때 PATH 추가 안 함 | `py naver_mail_ai.py`로 실행하거나, 파이썬 재설치 시 **Add python.exe to PATH** 체크 |
 
 참고
